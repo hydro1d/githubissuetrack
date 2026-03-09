@@ -84,3 +84,65 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
+function handleLogin(e) {
+  e.preventDefault();
+  const user = usernameInput.value.trim();
+  const pass = passwordInput.value.trim();
+
+  if (user === DEMO_USER && pass === DEMO_PASS) {
+    loginError.classList.add("hidden");
+    loginPage.classList.add("hidden");
+    mainPage.classList.remove("hidden");
+
+    sessionStorage.setItem("isLoggedIn", "true");
+    history.pushState(null, "", "#dashboard");
+
+    fetchIssues();
+  } else {
+    loginError.classList.remove("hidden");
+  }
+}
+
+function handlePopState() {
+  const hash = window.location.hash;
+
+  if (hash === "#login" || hash === "") {
+    sessionStorage.removeItem("isLoggedIn");
+
+    let localMainPage = document.getElementById("main-page");
+    let localLoginPage = document.getElementById("login-page");
+    let localLoginForm = document.getElementById("login-form");
+    let localLoginError = document.getElementById("login-error");
+
+    localMainPage.classList.add("hidden");
+    localLoginPage.classList.remove("hidden");
+
+    localLoginForm.reset();
+    localLoginError.classList.add("hidden");
+  } else if (
+    hash === "#dashboard" &&
+    sessionStorage.getItem("isLoggedIn") === "true"
+  ) {
+    document.getElementById("login-page").classList.add("hidden");
+    document.getElementById("main-page").classList.remove("hidden");
+  }
+}
+
+function fetchIssues() {
+  showLoading(true);
+  fetch(`${API_BASE_URL}/issues`)
+    .then((response) => {
+      if (!response.ok) throw new Error("Network response was not ok");
+      return response.json();
+    })
+    .then((data) => {
+      allIssues = data.data;
+      renderIssues();
+    })
+    .catch((error) => {
+      console.error("Failed to fetch issues:", error);
+    })
+    .finally(() => {
+      showLoading(false);
+    });
+}

@@ -146,3 +146,125 @@ function fetchIssues() {
       showLoading(false);
     });
 }
+
+function fetchSingleIssue(id) {
+  openModal();
+  modalLoader.classList.remove("hidden");
+  modalContent.classList.add("hidden");
+
+  fetch(`${API_BASE_URL}/issue/${id}`)
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+      return response.json();
+    })
+    .then((data) => {
+      populateModalData(data.data);
+      modalLoader.classList.add("hidden");
+      modalContent.classList.remove("hidden");
+    })
+    .catch((error) => {
+      console.error("Failed to fetch issue details:", error);
+      closeModal();
+    });
+}
+
+function renderIssues() {
+  issuesContainer.innerHTML = "";
+
+  const filtered = allIssues.filter((issue) => {
+    if (currentFilter === "all") return true;
+    return issue.status.toLowerCase() === currentFilter;
+  });
+
+  issueCount.textContent = filtered.length;
+
+  if (filtered.length === 0) {
+    emptyState.classList.remove("hidden");
+  } else {
+    emptyState.classList.add("hidden");
+
+    filtered.forEach((issue) => {
+      const card = createIssueCard(issue);
+      issuesContainer.appendChild(card);
+    });
+  }
+}
+
+function updateTabsUI(activeTabBtn) {
+  tabBtns.forEach((btn) => {
+    btn.classList.remove("bg-emerald-600", "text-white", "border-transparent");
+    btn.classList.add(
+      "border",
+      "border-slate-200",
+      "bg-white",
+      "text-slate-600",
+      "hover:text-white",
+      "hover:bg-emerald-600",
+      "hover:border-emerald-600",
+    );
+  });
+  activeTabBtn.classList.add("bg-emerald-600", "text-white");
+  activeTabBtn.classList.remove(
+    "border",
+    "border-slate-200",
+    "bg-white",
+    "text-slate-600",
+    "hover:text-white",
+    "hover:bg-emerald-600",
+    "hover:border-emerald-600",
+  );
+}
+
+function showLoading(isLoading) {
+  if (isLoading) {
+    loadingSpinner.classList.remove("hidden");
+    loadingSpinner.classList.add("flex");
+    issuesContainer.classList.add("hidden");
+    emptyState.classList.add("hidden");
+  } else {
+    loadingSpinner.classList.add("hidden");
+    loadingSpinner.classList.remove("flex");
+    issuesContainer.classList.remove("hidden");
+  }
+}
+
+function createIssueCard(issue) {
+  const isClosed = issue.status.toLowerCase() === "closed";
+  const borderColorClass = isClosed
+    ? "border-t-violet-500"
+    : "border-t-emerald-500";
+  const statusIcon = isClosed
+    ? `<img src="./assets/Closed- Status .png" class="w-5 h-5" alt="Closed">`
+    : `<img src="./assets/Open-Status.png" class="w-5 h-5" alt="Open">`;
+
+  const dateFormatted = new Date(issue.createdAt).toLocaleDateString();
+
+  const div = document.createElement("div");
+
+  div.className = `bg-white rounded-xl shadow-sm border border-slate-200 border-t-4 ${borderColorClass} p-5 hover:border-slate-300 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col h-full`;
+
+  div.addEventListener("click", () => fetchSingleIssue(issue.id || issue._id));
+
+  div.innerHTML = `
+        <div class="flex justify-between items-start mb-3">
+            <div class="shrink-0">${statusIcon}</div>
+            <div class="shrink-0">${getPriorityBadge(issue.priority)}</div>
+        </div>
+        
+        <h3 class="text-base font-bold text-slate-800 mb-2 line-clamp-2">${escapeHTML(issue.title)}</h3>
+        <p class="text-sm text-slate-500 mb-4 line-clamp-2 grow">${escapeHTML(issue.description)}</p>
+        
+        <div class="flex flex-wrap gap-2 mb-4">
+            ${issue.labels ? issue.labels.map((l) => getLabelBadge(l)).join("") : ""}
+        </div>
+        
+        <div class="mt-auto pt-4 border-t border-slate-100 flex flex-col text-xs text-slate-400">
+            <span class="mb-1">#${issue.id || issue._id} by <span class="text-slate-600 font-medium">${escapeHTML(issue.author)}</span></span>
+            <span>${dateFormatted}</span>
+        </div>
+    `;
+
+  return div;
+}

@@ -268,3 +268,13 @@ function createIssueCard(issue) {
 
   return div;
 }
+
+function openModal() {
+  modal.classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+}
+
+function closeModal() {
+  modal.classList.add("hidden");
+  document.body.style.overflow = "auto";
+}
